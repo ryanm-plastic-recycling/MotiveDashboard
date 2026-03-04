@@ -1,0 +1,1 @@
+-- Prisma is source of truth. See prisma/schema.prisma
