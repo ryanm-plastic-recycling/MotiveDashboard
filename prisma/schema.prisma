@@ -1,0 +1,96 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum LoadStatus {
+  PLANNED
+  IN_TRANSIT
+  DELIVERED
+  DELAYED
+  CANCELLED
+}
+
+enum TransportMode {
+  TRUCK
+  RAIL
+  INTERMODAL
+  OCEAN
+  AIR
+}
+
+model Carrier {
+  id    String @id @default(cuid())
+  name  String
+  loads Load[]
+}
+
+model Customer {
+  id    String @id @default(cuid())
+  name  String
+  loads Load[]
+}
+
+model Location {
+  id      String @id @default(cuid())
+  name    String
+  address String
+  city    String
+  state   String
+  zip     String
+  lat     Float
+  lon     Float
+
+  pickupLoads  Load[] @relation("pickup")
+  dropoffLoads Load[] @relation("dropoff")
+  events       LoadEvent[]
+}
+
+model Load {
+  id                 String        @id @default(cuid())
+  reference          String        @unique
+  status             LoadStatus
+  mode               TransportMode
+  carrierId          String
+  customerId         String
+  pickupLocationId   String
+  dropoffLocationId  String
+  pickupPlannedAt    DateTime
+  pickupActualAt     DateTime?
+  dropoffPlannedAt   DateTime
+  dropoffActualAt    DateTime?
+  distanceMiles      Float
+  costUsd            Float
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  carrier            Carrier       @relation(fields: [carrierId], references: [id])
+  customer           Customer      @relation(fields: [customerId], references: [id])
+  pickupLocation     Location      @relation("pickup", fields: [pickupLocationId], references: [id])
+  dropoffLocation    Location      @relation("dropoff", fields: [dropoffLocationId], references: [id])
+  events             LoadEvent[]
+
+  @@index([pickupPlannedAt])
+  @@index([dropoffPlannedAt])
+  @@index([status])
+  @@index([carrierId])
+  @@index([customerId])
+}
+
+model LoadEvent {
+  id         String   @id @default(cuid())
+  loadId     String
+  eventType  String
+  eventAt    DateTime
+  locationId String?
+  notes      String?
+
+  load       Load     @relation(fields: [loadId], references: [id])
+  location   Location? @relation(fields: [locationId], references: [id])
+
+  @@index([loadId, eventAt])
+}
