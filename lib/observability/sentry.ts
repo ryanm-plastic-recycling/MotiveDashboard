@@ -1,3 +1,5 @@
+import { env } from "@/lib/env";
+
 export function initSentry() {
-  if (!process.env.SENTRY_DSN) return;
+  if (!env.SENTRY_DSN) return;
 }

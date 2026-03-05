@@ -11,6 +11,7 @@ import { BreakdownCharts } from "@/components/dashboard/BreakdownCharts";
 import { LoadsMap } from "@/components/dashboard/LoadsMap";
 import { LoadsTable } from "@/components/dashboard/LoadsTable";
 import { LoadDetailDrawer } from "@/components/dashboard/LoadDetailDrawer";
+import { Badge } from "@/components/ui/badge";
 import { decodeFiltersFromSearchParams, encodeFiltersToSearchParams } from "@/lib/filters/urlState";
 import { DashboardFilters } from "@/lib/filters/types";
 
@@ -33,10 +34,11 @@ export default function DashboardPage() {
   const metrics = useQuery({ queryKey: ["metrics", q], queryFn: () => fetchJson(`/api/metrics?${q}`), refetchInterval: false });
   const loads = useQuery({ queryKey: ["loads", q], queryFn: async () => { const d = await fetchJson(`/api/loads?${q}&page=1&pageSize=200`); setLastUpdated(new Date().toISOString()); return d; } });
   const detail = useQuery({ queryKey: ["load", selected], queryFn: () => fetchJson(`/api/loads/${selected}`), enabled: !!selected });
+  const dataSource = useQuery({ queryKey: ["data-source"], queryFn: () => fetchJson(`/api/data-source`) });
 
   return <AppShell>
     <FilterBar filters={filters} setFilters={setFilters} lastUpdated={lastUpdated} />
-    <div className="mb-3 flex gap-2"><button className="rounded border px-2 py-1 text-xs" onClick={() => localStorage.setItem("savedView:default", JSON.stringify(filters))}>Save View</button><button className="rounded border px-2 py-1 text-xs" onClick={() => { const v = localStorage.getItem("savedView:default"); if (v) setFilters(JSON.parse(v)); }}>Apply View</button></div>
+    <div className="mb-3 flex items-center gap-2"><Badge>{dataSource.data?.source ?? "Demo Data"}</Badge><button className="rounded border px-2 py-1 text-xs" onClick={() => localStorage.setItem("savedView:default", JSON.stringify(filters))}>Save View</button><button className="rounded border px-2 py-1 text-xs" onClick={() => { const v = localStorage.getItem("savedView:default"); if (v) setFilters(JSON.parse(v)); }}>Apply View</button></div>
     <KpiCards data={metrics.data} loading={metrics.isLoading} onDeliveredClick={() => setFilters({ ...filters, statuses: ["DELIVERED"] })} />
     <div className="my-3 grid gap-3 md:grid-cols-2">
       <TimeSeriesChart data={metrics.data?.timeseries ?? []} />
