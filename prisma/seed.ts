@@ -5,7 +5,7 @@ const rand = <T>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
 const states = [[34.0522,-118.2437,"CA"],[41.8781,-87.6298,"IL"],[29.7604,-95.3698,"TX"],[33.4484,-112.074,"AZ"],[40.7128,-74.006,"NY"],[39.7392,-104.9903,"CO"],[47.6062,-122.3321,"WA"],[25.7617,-80.1918,"FL"]];
 
 async function main() {
-  await prisma.loadEvent.deleteMany(); await prisma.load.deleteMany(); await prisma.location.deleteMany(); await prisma.carrier.deleteMany(); await prisma.customer.deleteMany();
+  await prisma.loadEvent.deleteMany(); await prisma.load.deleteMany(); await prisma.vehicle.deleteMany(); await prisma.location.deleteMany(); await prisma.carrier.deleteMany(); await prisma.customer.deleteMany();
   const carriers = await prisma.$transaction(Array.from({ length: 50 }).map((_, i) => prisma.carrier.create({ data: { name: `Carrier ${i+1}` } })));
   const customers = await prisma.$transaction(Array.from({ length: 100 }).map((_, i) => prisma.customer.create({ data: { name: `Customer ${i+1}` } })));
   const locations = await prisma.$transaction(Array.from({ length: 300 }).map((_, i) => { const [lat,lon,s] = rand(states); return prisma.location.create({ data: { name: `Location ${i+1}`, address: `${100+i} Main St`, city: "City", state: s as string, zip: `9${(1000+i)%8999}`, lat: lat + (Math.random()-0.5)*3, lon: lon + (Math.random()-0.5)*3 } }); }));

@@ -1,73 +1,100 @@
 # Transportation Dashboard
 
-Production-ready starter for freight/logistics operations analytics built with Next.js App Router, TypeScript, Tailwind, Prisma/PostgreSQL, Recharts, Leaflet fallback mapping, TanStack Query/Table, and route-handler APIs with Zod validation.
+Next.js + Prisma + Postgres dashboard for transportation/load operations. The app ships with demo seed data and now supports ingesting live data from Motive via API-key sync.
 
 ## Prerequisites
-- Node.js 20+
-- pnpm 9+
-- Docker + Docker Compose
 
-## Quick setup
+- Node.js 20+
+- Docker + Docker Compose
+- `pnpm` 10.30.3
+
+## Required manual setup steps
+
+```bash
+corepack enable
+corepack prepare pnpm@10.30.3 --activate
+```
+
+If install scripts are blocked:
+
+```bash
+pnpm approve-builds
+```
+
+## Environment setup
+
 ```bash
 cp .env.example .env
-./scripts/dev-bootstrap.sh
+```
+
+### `.env` sections
+
+- **DB**: `DATABASE_URL`
+- **Auth/demo user**: `AUTH_ENABLED`, `NEXTAUTH_URL`, `NEXTAUTH_SECRET`, `DEMO_USER_EMAIL`, `DEMO_USER_PASSWORD`
+- **Maps**: `NEXT_PUBLIC_MAPBOX_TOKEN` (optional)
+- **Sentry**: `SENTRY_DSN`, `SENTRY_ENVIRONMENT`, `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT` (all optional)
+- **Motive**: `MOTIVE_ENABLED`, `MOTIVE_BASE_URL`, `MOTIVE_API_KEY`, `MOTIVE_SYNC_LOOKBACK_DAYS`, `MOTIVE_PAGE_SIZE`
+
+No Motive credentials are hardcoded; sync uses env vars only.
+
+## DB bootstrap
+
+```bash
+docker compose up -d
+pnpm install
+pnpm db:migrate
+pnpm db:seed
+```
+
+## Run app
+
+```bash
 pnpm dev
 ```
+
 Open http://localhost:3000/dashboard
 
-## Manual setup
+## Data sources
+
+### Demo mode (default)
+- Keep `MOTIVE_ENABLED=false`
+- Use seeded data via `pnpm db:seed`
+
+### Motive mode
+1. Set in `.env`:
+   - `MOTIVE_ENABLED=true`
+   - `MOTIVE_API_KEY=<your key>`
+2. Run sync:
+
 ```bash
-cp .env.example .env
-docker compose up -d postgres
-pnpm install
-pnpm prisma generate
-pnpm prisma migrate dev --name init
-pnpm prisma db seed
-pnpm dev
+pnpm motive:sync
 ```
 
-## Feature overview
-- KPI cards: total, delivered, on-time %, avg cost/mile
-- Sticky global filter bar + URL state sync (shareable links)
-- Time-series and breakdown charts with click-to-filter
-- Interactive map (Leaflet fallback by default) with route lines and bbox updates
-- Sortable loads table + CSV export + row detail drawer
-- Load details page (`/loads/[id]`)
-- Saved view quick actions (localStorage)
-- Dark mode persistence
-- Optional auth with NextAuth credentials provider
-- Observability hooks: lightweight logger + optional Sentry DSN wiring
+The dashboard APIs continue to read from Postgres regardless of whether rows came from seed or Motive.
 
-## Environment variables
-See `.env.example`:
-- `DATABASE_URL`: Postgres connection
-- `AUTH_ENABLED`: `true/false`
-- `NEXTAUTH_SECRET`
-- `DEMO_USER_EMAIL`, `DEMO_USER_PASSWORD`
-- `MAPBOX_TOKEN` (optional; app still runs without it)
-- `SENTRY_DSN` (optional)
+## Scripts
 
-## Auth
-If `AUTH_ENABLED=false`, dashboard is open.
-If `AUTH_ENABLED=true`, middleware protects `/dashboard` and `/loads/*`; sign in via NextAuth credentials using demo env vars.
+- `pnpm db:up` / `pnpm db:down`
+- `pnpm db:migrate`
+- `pnpm db:seed`
+- `pnpm motive:sync`
+- `pnpm test`
+- `pnpm test:e2e`
 
-## Exporting CSV
-Use the **Export CSV** button in the table panel to export currently loaded rows.
+## Accounts needed for optional integrations
 
-## SQL scripts
-Operational SQL references are in `sql/`:
-- `00_extensions.sql` PostGIS extension
-- `20_indexes.sql` query-driven indexes
-- `30_views_materialized.sql` daily metrics materialized view + refresh note
-
-## Testing
-```bash
-pnpm test
-pnpm test:e2e
-```
+- **Mapbox**: only if you want Mapbox token present (UI otherwise falls back to Leaflet/OSM)
+- **Sentry**: only if you want error tracking
+- **Motive**: required for live sync
 
 ## Troubleshooting
-- **Prisma migrate fails**: verify Docker Postgres is running and `DATABASE_URL` matches credentials.
-- **Map tiles not rendering**: check internet access; Leaflet uses OpenStreetMap tile endpoint.
-- **E2E test fails on startup**: run `pnpm dev` once manually and retry `pnpm test:e2e`.
-- **Auth redirect loops**: ensure `NEXTAUTH_SECRET` is set and clear browser cookies.
+
+- **Leaflet tiles look broken/scattered**
+  - Confirm `leaflet/dist/leaflet.css` is globally loaded.
+  - Ensure global CSS includes: `.leaflet-container img { max-width: none !important; }`.
+- **`pnpm` install blocked**
+  - Run `pnpm approve-builds`.
+- **Motive sync exits early**
+  - Check `MOTIVE_ENABLED=true` and `MOTIVE_API_KEY`.
+- **Auth redirect loops**
+  - Set `NEXTAUTH_URL` and `NEXTAUTH_SECRET`, then clear cookies.
